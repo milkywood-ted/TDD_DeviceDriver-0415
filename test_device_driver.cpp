@@ -2,6 +2,7 @@
 #include "flash_memory_device.h"
 #include "device_driver.h"
 
+
 using namespace ::testing;
 
 class MockFlashMemDevice : public FlashMemoryDevice {
@@ -14,12 +15,11 @@ public:
 
 class DeviceDriverFixture : public Test {
 protected:
-	void SetUp() override {
+	void SetUp() {
 		//deviceDriver = DeviceDriver{ &flashMemDev };
 	}
 public:
 	MockFlashMemDevice flashMemDev;
-	//DeviceDriver& deviceDriver;
 
 	int testRead(long address) {
 		DeviceDriver deviceDriver{ &flashMemDev };
@@ -36,7 +36,7 @@ TEST_F(DeviceDriverFixture, ReadPositiveTC01) {
 	int expectedValue = 0xDE;
 	long dummyAddress = 0xdeaddead;
 
-	EXPECT_CALL(flashMemDev, read(dummyAddress))
+	EXPECT_CALL(flashMemDev, read(_))
 		.Times(5)
 		.WillRepeatedly(Return(expectedValue));
 	testRead(dummyAddress);
@@ -46,7 +46,7 @@ TEST_F(DeviceDriverFixture, ReadNegativeTC01) {
 	long dummyAddress = 0xdeaddead;
 	unsigned char dummyValue = 0xDE;
 
-	EXPECT_CALL(flashMemDev, read(dummyAddress))
+	EXPECT_CALL(flashMemDev, read(_))
 		.Times(5)
 		.WillOnce(Return(0x1))
 		.WillRepeatedly(Return(dummyValue));
@@ -62,7 +62,7 @@ TEST_F(DeviceDriverFixture, WritePositiveTC01) {
 	int expectedReadValue = 0xFF, writeValue = 0xDADA;
 	long dummyAddress = 0xdeaddead;
 
-	EXPECT_CALL(flashMemDev, read(dummyAddress))
+	EXPECT_CALL(flashMemDev, read(_))
 		.WillRepeatedly(Return(expectedReadValue));
 	EXPECT_CALL(flashMemDev, write(dummyAddress, writeValue))
 		.Times(1);
@@ -73,7 +73,7 @@ TEST_F(DeviceDriverFixture, WriteNegaitiveTC01) {
 	int expectedReadValue = 0xFE, writeValue = 0xDADA;
 	long dummyAddress = 0xdeaddead;
 
-	EXPECT_CALL(flashMemDev, read(dummyAddress))
+	EXPECT_CALL(flashMemDev, read(_))
 		.WillRepeatedly(Return(expectedReadValue));
 	EXPECT_CALL(flashMemDev, write(dummyAddress, writeValue))
 		.Times(0);
@@ -102,6 +102,30 @@ TEST(DeviceDriverTS, ReadNegativeTC1) {
 	EXPECT_THROW(deviceDriver.read(dummyAddress), ReadFailException);
 }
 */
+
+#include "application.cpp"
+TEST_F(DeviceDriverFixture, AppReadTC) {
+	DeviceDriver deviceDriver{ &flashMemDev };
+	Application app{ &deviceDriver };
+	long dummyAddress = 0xdeadead;
+
+	EXPECT_CALL(flashMemDev, read(_))
+		.Times(25)
+		.WillRepeatedly(Return(10));
+;
+	app.readAndPrint(0xa0, 0xa4);
+}
+
+TEST_F(DeviceDriverFixture, AppWriteTC) {
+	DeviceDriver deviceDriver{ &flashMemDev };
+	Application app{ &deviceDriver };
+
+	EXPECT_CALL(flashMemDev, read(_))
+		.WillRepeatedly(Return(0xFF));
+	EXPECT_CALL(flashMemDev, write(_,_))
+		.Times(5);
+	app.writeAll(0x11);
+}
 
 
 int main() {
