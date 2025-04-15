@@ -121,6 +121,7 @@ TEST_F(DeviceDriverFixture, AppWriteTC) {
 	Application app{ &deviceDriver };
 
 	EXPECT_CALL(flashMemDev, read(_))
+		.Times(25)
 		.WillRepeatedly(Return(0xFF));
 	EXPECT_CALL(flashMemDev, write(_,_))
 		.Times(5);
