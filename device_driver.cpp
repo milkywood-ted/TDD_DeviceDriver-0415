@@ -25,5 +25,12 @@ int DeviceDriver::read(long address)
 void DeviceDriver::write(long address, int data)
 {
     // TODO: implement this method
-    m_hardware->write(address, (unsigned char)data);
+    //m_hardware->write(address, (unsigned char)data);
+
+    int value = read(address);
+
+    if (value != 0xFF)
+        throw WriteFailException("Value is already writtine in");
+
+    m_hardware->write(address, data);
 }

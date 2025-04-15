@@ -13,21 +13,22 @@ public:
 };
 
 class DeviceDriverFixture : public Test {
+protected:
+	void SetUp() override {
+		//deviceDriver = DeviceDriver{ &flashMemDev };
+	}
 public:
 	MockFlashMemDevice flashMemDev;
+	//DeviceDriver& deviceDriver;
 
 	int testRead(long address) {
 		DeviceDriver deviceDriver{ &flashMemDev };
-		int readValue = -1;
-	
-		try {
-			readValue = deviceDriver.read(address);
-			//EXPECT_EQ(expectedValue, testRead(dummyAddress));
-		}
-		catch (ReadFailException& e) {
-			EXPECT_EQ(std::string{ e.what() }, "Value is unstable from 5times read from the Device");
-		}
-		return readValue;
+		return deviceDriver.read(address);
+	}
+
+	void testWrite(long address, int data) {
+		DeviceDriver deviceDriver{ &flashMemDev };
+		deviceDriver.write(address, data);
 	}
 };
 
@@ -49,8 +50,39 @@ TEST_F(DeviceDriverFixture, ReadNegativeTC01) {
 		.Times(5)
 		.WillOnce(Return(0x1))
 		.WillRepeatedly(Return(dummyValue));
+	try {
+		testRead(dummyAddress);
+	}
+	catch (ReadFailException& e) {
+		EXPECT_EQ(std::string{ e.what() }, "Value is unstable from 5times read from the Device");
+	}
+}
 
-	testRead(dummyAddress);
+TEST_F(DeviceDriverFixture, WritePositiveTC01) {
+	int expectedReadValue = 0xFF, writeValue = 0xDADA;
+	long dummyAddress = 0xdeaddead;
+
+	EXPECT_CALL(flashMemDev, read(dummyAddress))
+		.WillRepeatedly(Return(expectedReadValue));
+	EXPECT_CALL(flashMemDev, write(dummyAddress, writeValue))
+		.Times(1);
+
+	testWrite(dummyAddress, writeValue);
+}
+TEST_F(DeviceDriverFixture, WriteNegaitiveTC01) {
+	int expectedReadValue = 0xFE, writeValue = 0xDADA;
+	long dummyAddress = 0xdeaddead;
+
+	EXPECT_CALL(flashMemDev, read(dummyAddress))
+		.WillRepeatedly(Return(expectedReadValue));
+	EXPECT_CALL(flashMemDev, write(dummyAddress, writeValue))
+		.Times(0);
+	try {
+		testWrite(dummyAddress, writeValue);
+	}
+	catch (WriteFailException& e) {
+		EXPECT_EQ(std::string{ e.what() }, "Value is already writtine in");
+	}
 }
 
 /*
