@@ -6,7 +6,20 @@ DeviceDriver::DeviceDriver(FlashMemoryDevice *hardware) : m_hardware(hardware)
 int DeviceDriver::read(long address)
 {
     // TODO: implement this method properly
-    return (int)(m_hardware->read(address));
+    //return (int)(m_hardware->read(address));
+
+    int readValues[5] = { -1 };
+
+    for (auto& r : readValues)
+        r = m_hardware->read(address);
+
+    int readValue = readValues[0];
+    for (auto& r : readValues) {
+        if (readValue != r)
+            throw ReadFailException("Value is unstable from 5times read from the Device");
+    }
+    
+    return readValue;
 }
 
 void DeviceDriver::write(long address, int data)
